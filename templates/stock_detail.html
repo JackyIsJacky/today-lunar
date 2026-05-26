@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+{% block title %}個股詳情 - {{ stock_id }}{% endblock %}
+
+{% block head %}
+<script src="https://unpkg.com/lightweight-charts@4.1.4/dist/lightweight-charts.standalone.production.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2><i class="bi bi-search"></i> 個股詳情</h2>
+    <div class="header-actions">
+        <div class="input-group input-group-sm stock-search">
+            <input type="text" class="form-control" id="stockSearchInput"
+                   placeholder="輸入股票代碼或名稱" value="{{ stock_id }}">
+            <button class="btn btn-primary" id="btnSearch">
+                <i class="bi bi-search"></i> 搜尋
+            </button>
+        </div>
+    </div>
+</div>
+
+{% if stock_id != '0' %}
+<!-- 個股基本資訊 -->
+<div class="row g-3 mb-3" id="stockInfoRow">
+    <div class="col-xl-2 col-md-4">
+        <div class="info-card">
+            <div class="info-card-label">股票名稱</div>
+            <div class="info-card-value" id="stockName">{{ stock_id }}</div>
+        </div>
+    </div>
+    <div class="col-xl-2 col-md-4">
+        <div class="info-card">
+            <div class="info-card-label">收盤價</div>
+            <div class="info-card-value" id="stockPrice">--</div>
+        </div>
+    </div>
+    <div class="col-xl-2 col-md-4">
+        <div class="info-card">
+            <div class="info-card-label">漲跌幅</div>
+            <div class="info-card-value" id="stockChange">--</div>
+        </div>
+    </div>
+    <div class="col-xl-2 col-md-4">
+        <div class="info-card">
+            <div class="info-card-label">成交量</div>
+            <div class="info-card-value" id="stockVolume">--</div>
+        </div>
+    </div>
+    <div class="col-xl-2 col-md-4">
+        <div class="info-card">
+            <div class="info-card-label">股本</div>
+            <div class="info-card-value" id="stockCapital">--</div>
+        </div>
+    </div>
+    <div class="col-xl-2 col-md-4">
+        <div class="info-card">
+            <div class="info-card-label">策略狀態</div>
+            <div class="info-card-value" id="stockStatus">
+                <span class="status-pill status-pending">--</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- K線圖區域 -->
+<div class="panel mb-3">
+    <div class="panel-header">
+        <span>K 線圖</span>
+        <div class="ma-toggles">
+            <label class="ma-checkbox"><input type="checkbox" id="ma5Check" checked> MA5</label>
+            <label class="ma-checkbox"><input type="checkbox" id="ma20Check" checked> MA20</label>
+            <label class="ma-checkbox"><input type="checkbox" id="ma60Check"> MA60</label>
+            <label class="ma-checkbox"><input type="checkbox" id="ma120Check"> MA120</label>
+        </div>
+    </div>
+    <div class="panel-body p-0">
+        <div id="klineChart" style="width:100%;height:500px;"></div>
+    </div>
+</div>
+
+<div class="row g-3">
+    <!-- 關鍵紅K資訊卡 -->
+    <div class="col-lg-4">
+        <div class="panel">
+            <div class="panel-header">關鍵帶量紅K</div>
+            <div class="panel-body">
+                <div id="keyCandleInfo">
+                    <span class="text-muted small">尚無資料</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- 買賣訊號 -->
+    <div class="col-lg-4">
+        <div class="panel">
+            <div class="panel-header">交易訊號</div>
+            <div class="panel-body">
+                <div id="tradeSignals">
+                    <span class="text-muted small">尚無訊號</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- 籌碼分點 -->
+    <div class="col-lg-4">
+        <div class="panel">
+            <div class="panel-header">近 5 日買超前 10 分點</div>
+            <div class="panel-body">
+                <div class="table-responsive">
+                    <table class="table table-dark table-sm mb-0">
+                        <thead>
+                            <tr><th>分點</th><th>買超張數</th><th>連續天數</th></tr></thead>
+                        <tbody id="brokerTableBody">
+                            <tr><td colspan="3" class="text-center text-muted">尚無資料</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="mt-2 text-center">
+                    <span class="text-muted small">預留：分點庫存變化圖</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="text-center text-muted py-5">
+    <i class="bi bi-search" style="font-size:3rem;"></i>
+    <p class="mt-3">請輸入股票代碼進行查詢</p>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/kline.js') }}"></script>
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    {% if stock_id != '0' %}
+    KlineChart.init("{{ stock_id }}");
+    {% endif %}
+    document.getElementById("btnSearch").addEventListener("click", () => {
+        const code = document.getElementById("stockSearchInput").value.trim();
+        if (code) window.location.href = "/stock/" + code;
+    });
+    document.getElementById("stockSearchInput").addEventListener("keydown", (e) => {
+        if (e.key === "Enter") document.getElementById("btnSearch").click();
+    });
+});
+</script>
+{% endblock %}

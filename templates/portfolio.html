@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+{% block title %}虛擬庫存 - 關鍵籌碼追蹤演算法{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2>虛擬庫存</h2>
+    <div class="header-actions">
+        <button class="btn btn-primary btn-sm" id="btnManualBuy">
+            <i class="bi bi-cart-plus"></i> 手動買入
+        </button>
+        <button class="btn btn-danger btn-sm" id="btnManualSell">
+            <i class="bi bi-cart-dash"></i> 手動賣出
+        </button>
+        <button class="btn btn-outline-warning btn-sm" id="btnResetAccount">
+            <i class="bi bi-arrow-counterclockwise"></i> 重設帳戶
+        </button>
+        <button class="btn btn-outline-secondary btn-sm" id="btnExportRecords">
+            <i class="bi bi-download"></i> 匯出交易紀錄
+        </button>
+    </div>
+</div>
+
+<!-- 帳戶概覽 -->
+<div class="row g-3 mb-4">
+    <div class="col-xl-2 col-lg-4 col-md-6">
+        <div class="info-card">
+            <div class="info-card-label">初始資金</div>
+            <div class="info-card-value" id="initialCapital">1,000,000</div>
+        </div>
+    </div>
+    <div class="col-xl-2 col-lg-4 col-md-6">
+        <div class="info-card">
+            <div class="info-card-label">可用現金</div>
+            <div class="info-card-value" id="availableCash">1,000,000</div>
+        </div>
+    </div>
+    <div class="col-xl-2 col-lg-4 col-md-6">
+        <div class="info-card">
+            <div class="info-card-label">持倉市值</div>
+            <div class="info-card-value" id="totalMarketValue">0</div>
+        </div>
+    </div>
+    <div class="col-xl-2 col-lg-4 col-md-6">
+        <div class="info-card">
+            <div class="info-card-label">總損益</div>
+            <div class="info-card-value" id="totalPnL">0</div>
+        </div>
+    </div>
+    <div class="col-xl-2 col-lg-4 col-md-6">
+        <div class="info-card">
+            <div class="info-card-label">總報酬率</div>
+            <div class="info-card-value" id="totalReturnPct">0%</div>
+        </div>
+    </div>
+    <div class="col-xl-2 col-lg-4 col-md-6">
+        <div class="info-card">
+            <div class="info-card-label">勝率</div>
+            <div class="info-card-value" id="winRate">--</div>
+        </div>
+    </div>
+</div>
+
+<div class="text-center text-muted small mb-3">預留：資金曲線圖</div>
+
+<!-- 庫存列表 -->
+<div class="panel mb-3">
+    <div class="panel-header">
+        <span>庫存持股</span>
+        <span class="badge bg-accent-1" id="positionCount">0 檔</span>
+    </div>
+    <div class="panel-body">
+        <div class="table-responsive">
+            <table class="table table-dark table-sm table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>股票代碼</th>
+                        <th>股票名稱</th>
+                        <th>持有張數</th>
+                        <th>成本價</th>
+                        <th>現價</th>
+                        <th>損益%</th>
+                        <th>支撐價</th>
+                        <th>進場理由</th>
+                        <th>警示狀態</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="positionTableBody">
+                    <tr><td colspan="10" class="text-center text-muted">尚無庫存</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="mt-2 text-muted small">預留：加減碼操作欄位</div>
+    </div>
+</div>
+
+<!-- 出場警示 -->
+<div class="panel mb-3" id="exitAlertPanel" style="display:none;">
+    <div class="panel-header text-danger">
+        <i class="bi bi-exclamation-triangle"></i>
+        <span>出場警示</span>
+        <span class="badge bg-danger" id="exitAlertCount">0</span>
+        <button class="btn btn-danger btn-sm ms-auto" id="btnSellAllAlerts">
+            <i class="bi bi-cart-x"></i> 一鍵全數賣出
+        </button>
+    </div>
+    <div class="panel-body">
+        <div class="table-responsive">
+            <table class="table table-dark table-sm table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>股票代碼</th>
+                        <th>股票名稱</th>
+                        <th>成本價</th>
+                        <th>支撐價</th>
+                        <th>現價</th>
+                        <th>警示類型</th>
+                        <th>觸發條件</th>
+                    </tr>
+                </thead>
+                <tbody id="exitAlertTableBody">
+                    <tr><td colspan="7" class="text-center text-muted">無出場警示</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- 交易紀錄 -->
+<div class="panel">
+    <div class="panel-header">
+        <span>交易紀錄</span>
+        <span class="text-muted small">最近 50 筆</span>
+    </div>
+    <div class="panel-body">
+        <div class="table-responsive">
+            <table class="table table-dark table-sm table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>日期</th>
+                        <th>股票代碼</th>
+                        <th>方向</th>
+                        <th>張數</th>
+                        <th>價格</th>
+                        <th>理由</th>
+                        <th>損益</th>
+                    </tr>
+                </thead>
+                <tbody id="tradeHistoryBody">
+                    <tr><td colspan="7" class="text-center text-muted">尚無交易紀錄</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="mt-2 text-muted small">預留：匯出對帳單格式選擇</div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/portfolio.js') }}"></script>
+{% endblock %}

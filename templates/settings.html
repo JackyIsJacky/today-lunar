@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+{% block title %}系統設定 - 關鍵籌碼追蹤演算法{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2>系統設定</h2>
+    <div class="header-actions">
+        <button class="btn btn-primary btn-sm" id="btnTestApi">
+            <i class="bi bi-plug"></i> 測試 API 連線
+        </button>
+        <button class="btn btn-success btn-sm" id="btnSaveSettings">
+            <i class="bi bi-floppy"></i> 儲存設定
+        </button>
+        <button class="btn btn-outline-warning btn-sm" id="btnResetDefaults">
+            <i class="bi bi-arrow-counterclockwise"></i> 重設為預設值
+        </button>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-6">
+        <!-- API 設定 -->
+        <div class="panel">
+            <div class="panel-header">
+                <span>FinMind API 設定</span>
+                <span id="apiStatusBadge" class="badge bg-secondary">未測試</span>
+            </div>
+            <div class="panel-body">
+                <div class="mb-3">
+                    <label class="form-label">API Token</label>
+                    <input type="password" class="form-control form-control-sm" id="finmindToken"
+                           placeholder="輸入 FinMind API Token">
+                    <div class="form-text">註冊網址：<a href="https://finmindtrade.com" target="_blank">https://finmindtrade.com</a></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <!-- 交易參數 -->
+        <div class="panel">
+            <div class="panel-header">
+                <span>交易參數</span>
+            </div>
+            <div class="panel-body">
+                <div class="row g-2">
+                    <div class="col-md-6">
+                        <label class="form-label">初始資金</label>
+                        <input type="number" class="form-control form-control-sm" id="settingsCapital" value="1000000" step="100000">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">每次買進比例</label>
+                        <input type="number" class="form-control form-control-sm" id="settingsTradeRatio" value="0.2" step="0.05" min="0.05" max="1">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">手續費率 (%)</label>
+                        <input type="number" class="form-control form-control-sm" id="settingsCommission" value="0.1425" step="0.001">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">證交稅率 (%)</label>
+                        <input type="number" class="form-control form-control-sm" id="settingsTax" value="0.3" step="0.01">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mt-0">
+    <div class="col-lg-6">
+        <!-- 策略參數 -->
+        <div class="panel">
+            <div class="panel-header">
+                <span>策略參數</span>
+            </div>
+            <div class="panel-body">
+                <div class="row g-2">
+                    <div class="col-md-6">
+                        <label class="form-label">關鍵紅K回溯天數</label>
+                        <input type="number" class="form-control form-control-sm" id="settingsKeyCandleLookback" value="20" min="5" max="60">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">量縮判斷 MA 週期</label>
+                        <input type="number" class="form-control form-control-sm" id="settingsVolumeMA" value="5" min="3" max="20">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">籌碼追蹤天數</label>
+                        <input type="number" class="form-control form-control-sm" id="settingsChipDays" value="5" min="3" max="10">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">主力出貨警示比例 (%)</label>
+                        <input type="number" class="form-control form-control-sm" id="settingsChipDumpRatio" value="30" min="10" max="80">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">股本上限 (億)</label>
+                        <input type="number" class="form-control form-control-sm" id="settingsCapitalThreshold" value="10" min="1" max="50">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">收盤價上限 (元)</label>
+                        <input type="number" class="form-control form-control-sm" id="settingsPriceThreshold" value="50" min="10" max="200">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <!-- 隔日沖黑名單 -->
+        <div class="panel">
+            <div class="panel-header">
+                <span>隔日沖券商黑名單</span>
+                <span class="badge bg-accent-1" id="blacklistCount">0</span>
+            </div>
+            <div class="panel-body">
+                <div class="input-group input-group-sm mb-2">
+                    <input type="text" class="form-control" id="blacklistCode"
+                           placeholder="券商代碼 (例: 9200 = 凱基台北)">
+                    <input type="text" class="form-control" id="blacklistName"
+                           placeholder="券商名稱">
+                    <button class="btn btn-outline-danger" id="btnAddBlacklist">
+                        <i class="bi bi-plus"></i> 加入
+                    </button>
+                </div>
+                <div class="table-responsive" style="max-height:200px;overflow-y:auto;">
+                    <table class="table table-dark table-sm mb-0">
+                        <thead>
+                            <tr><th>券商代碼</th><th>券商名稱</th><th>操作</th></tr>
+                        </thead>
+                        <tbody id="blacklistTableBody">
+                            <tr><td colspan="3" class="text-center text-muted">預設黑名單尚未載入</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/settings.js') }}"></script>
+{% endblock %}

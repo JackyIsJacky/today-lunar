@@ -1,0 +1,201 @@
+{% extends "base.html" %}
+{% block title %}市場儀表板 - 關鍵籌碼追蹤演算法{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2>市場儀表板</h2>
+    <div class="header-actions">
+        <button class="btn btn-warning btn-sm" id="btnInitData" title="首次載入股票資料">
+            <i class="bi bi-database-fill-down"></i> 初始化資料庫
+        </button>
+        <button class="btn btn-primary btn-sm" id="btnUpdateData" title="更新資料">
+            <i class="bi bi-cloud-download"></i> 一鍵更新資料
+        </button>
+        <button class="btn btn-success btn-sm" id="btnRunScreening" title="執行選股">
+            <i class="bi bi-play-fill"></i> 手動執行選股
+        </button>
+        <button class="btn btn-outline-light btn-sm" id="btnExportCSV">
+            <i class="bi bi-download"></i> 匯出訊號 CSV
+        </button>
+    </div>
+</div>
+
+<!-- 初始化進度條 -->
+<div class="panel mb-3" id="initProgressPanel" style="display:none;">
+    <div class="panel-body">
+        <div class="d-flex align-items-center gap-2 mb-2">
+            <div class="spinner-border spinner-border-sm text-warning" id="initSpinner"></div>
+            <span id="initProgressText">載入中...</span>
+        </div>
+        <div class="progress" style="height:6px;">
+            <div class="progress-bar bg-warning" id="initProgressBar" style="width:0%"></div>
+        </div>
+    </div>
+</div>
+
+<!-- 大盤狀態卡片 -->
+<div class="row g-3 mb-4">
+    <div class="col-xl-3 col-md-6">
+        <div class="info-card">
+            <div class="info-card-icon"><i class="bi bi-graph-up"></i></div>
+            <div class="info-card-body">
+                <div class="info-card-label">加權指數</div>
+                <div class="info-card-value" id="taiIndex">--</div>
+                <div class="info-card-sub" id="taiChange">--</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="info-card">
+            <div class="info-card-icon"><i class="bi bi-bar-chart"></i></div>
+            <div class="info-card-body">
+                <div class="info-card-label">大盤成交量</div>
+                <div class="info-card-value" id="taiVolume">--</div>
+                <div class="info-card-sub"><span class="badge" id="volumeStatus">--</span></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="info-card">
+            <div class="info-card-icon"><i class="bi bi-arrow-left-right"></i></div>
+            <div class="info-card-body">
+                <div class="info-card-label">5日均量</div>
+                <div class="info-card-value" id="taiVolMA">--</div>
+                <div class="info-card-sub">量縮判斷基準</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="info-card">
+            <div class="info-card-icon"><i class="bi bi-check-circle"></i></div>
+            <div class="info-card-body">
+                <div class="info-card-label">量縮狀態</div>
+                <div class="info-card-value" id="volumeContraction">
+                    <span class="status-pill status-pending">待更新</span>
+                </div>
+                <div class="info-card-sub">成交量 < 5日均量時啟動</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 篩選階段統計 -->
+<div class="section-title">選股階段通過數</div>
+<div class="row g-3 mb-4">
+    <div class="col-lg-4">
+        <div class="info-card card-accent-1">
+            <div class="info-card-body w-100">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="info-card-label">步驟一：量縮 + 股本 + 價格</div>
+                        <div class="info-card-value" id="step1Count">--</div>
+                    </div>
+                    <div class="badge-count bg-accent-1" id="step1Badge">0</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="info-card card-accent-2">
+            <div class="info-card-body w-100">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="info-card-label">步驟二：關鍵紅K + 支撐線</div>
+                        <div class="info-card-value" id="step2Count">--</div>
+                    </div>
+                    <div class="badge-count bg-accent-2" id="step2Badge">0</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="info-card card-accent-3">
+            <div class="info-card-body w-100">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="info-card-label">步驟三：主力籌碼確認</div>
+                        <div class="info-card-value" id="step3Count">--</div>
+                    </div>
+                    <div class="badge-count bg-accent-3" id="step3Badge">0</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 庫存快覽 + 最新訊號 -->
+<div class="row g-3">
+    <div class="col-lg-5">
+        <div class="panel">
+            <div class="panel-header">
+                <span>虛擬庫存快覽</span>
+                <a href="{{ url_for('portfolio') }}" class="btn btn-sm btn-outline-secondary">完整庫存 <i class="bi bi-arrow-right"></i></a>
+            </div>
+            <div class="panel-body">
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <div class="mini-stat">
+                            <div class="mini-stat-label">持有檔數</div>
+                            <div class="mini-stat-value" id="holdingCount">--</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="mini-stat">
+                            <div class="mini-stat-label">持倉市值</div>
+                            <div class="mini-stat-value" id="holdingValue">--</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="mini-stat">
+                            <div class="mini-stat-label">未實現損益</div>
+                            <div class="mini-stat-value" id="unrealizedPnL">--</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="mini-stat">
+                            <div class="mini-stat-label">總報酬率</div>
+                            <div class="mini-stat-value" id="totalReturn">--</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="text-center text-muted small" id="portfolioHint">尚無庫存資料</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-7">
+        <div class="panel">
+            <div class="panel-header">
+                <span>最新交易訊號</span>
+                <span class="text-muted small">最近 10 筆</span>
+            </div>
+            <div class="panel-body">
+                <div class="table-responsive">
+                    <table class="table table-dark table-sm table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>時間</th>
+                                <th>股票</th>
+                                <th>方向</th>
+                                <th>價格</th>
+                                <th>理由</th>
+                            </tr>
+                        </thead>
+                        <tbody id="signalTableBody">
+                            <tr>
+                                <td colspan="5" class="text-center text-muted">尚無交易訊號</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+<script>
+document.addEventListener("DOMContentLoaded", () => Dashboard.init());
+</script>
+{% endblock %}

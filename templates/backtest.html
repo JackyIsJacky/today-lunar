@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+{% block title %}回測中心 - 關鍵籌碼追蹤演算法{% endblock %}
+
+{% block head %}
+<script src="https://unpkg.com/lightweight-charts@4.1.4/dist/lightweight-charts.standalone.production.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2>回測中心</h2>
+    <div class="header-actions">
+        <button class="btn btn-primary btn-sm" id="btnStartBacktest">
+            <i class="bi bi-play-fill"></i> 開始回測
+        </button>
+        <button class="btn btn-danger btn-sm" id="btnStopBacktest" style="display:none;">
+            <i class="bi bi-stop-fill"></i> 停止回測
+        </button>
+        <button class="btn btn-outline-secondary btn-sm" id="btnExportReport">
+            <i class="bi bi-download"></i> 匯出回測報告
+        </button>
+    </div>
+</div>
+
+<!-- 參數設定 -->
+<div class="panel mb-3">
+    <div class="panel-header">
+        <span>回測參數設定</span>
+        <span class="text-muted small">預留：儲存/載入參數組合</span>
+    </div>
+    <div class="panel-body">
+        <div class="row g-3">
+            <div class="col-lg-3 col-md-6">
+                <label class="form-label">起始日期</label>
+                <input type="date" class="form-control form-control-sm" id="btStartDate" value="2024-01-01">
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <label class="form-label">結束日期</label>
+                <input type="date" class="form-control form-control-sm" id="btEndDate" value="2024-12-31">
+            </div>
+            <div class="col-lg-2 col-md-4">
+                <label class="form-label">初始資金</label>
+                <input type="number" class="form-control form-control-sm" id="btCapital" value="1000000" step="100000">
+            </div>
+            <div class="col-lg-2 col-md-4">
+                <label class="form-label">手續費%</label>
+                <input type="number" class="form-control form-control-sm" id="btCommission" value="0.1425" step="0.001">
+            </div>
+            <div class="col-lg-2 col-md-4">
+                <label class="form-label">每次下單比例</label>
+                <input type="number" class="form-control form-control-sm" id="btTradeRatio" value="0.2" step="0.05">
+            </div>
+        </div>
+        <div class="mt-3">
+            <label class="form-label d-block">策略篩選條件（可獨立測試各階段）</label>
+            <div class="d-flex gap-3 flex-wrap">
+                <label class="ma-checkbox"><input type="checkbox" id="btStep1" checked> 步驟一：過濾</label>
+                <label class="ma-checkbox"><input type="checkbox" id="btStep2" checked> 步驟二：技術面</label>
+                <label class="ma-checkbox"><input type="checkbox" id="btStep3" checked> 步驟三：籌碼面</label>
+                <label class="ma-checkbox"><input type="checkbox" id="btStep4" checked> 步驟四：出場</label>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 績效指標 -->
+<div class="row g-3 mb-3">
+    <div class="col-xl-2 col-lg-4 col-md-6">
+        <div class="info-card">
+            <div class="info-card-label">總報酬率</div>
+            <div class="info-card-value" id="btTotalReturn">--</div>
+        </div>
+    </div>
+    <div class="col-xl-2 col-lg-4 col-md-6">
+        <div class="info-card">
+            <div class="info-card-label">年化報酬</div>
+            <div class="info-card-value" id="btAnnualReturn">--</div>
+        </div>
+    </div>
+    <div class="col-xl-2 col-lg-4 col-md-6">
+        <div class="info-card">
+            <div class="info-card-label">勝率</div>
+            <div class="info-card-value" id="btWinRate">--</div>
+        </div>
+    </div>
+    <div class="col-xl-2 col-lg-4 col-md-6">
+        <div class="info-card">
+            <div class="info-card-label">最大回撤(MDD)</div>
+            <div class="info-card-value" id="btMDD">--</div>
+        </div>
+    </div>
+    <div class="col-xl-2 col-lg-4 col-md-6">
+        <div class="info-card">
+            <div class="info-card-label">夏普比率</div>
+            <div class="info-card-value" id="btSharpe">--</div>
+        </div>
+    </div>
+    <div class="col-xl-2 col-lg-4 col-md-6">
+        <div class="info-card">
+            <div class="info-card-label">交易次數</div>
+            <div class="info-card-value" id="btTradeCount">--</div>
+        </div>
+    </div>
+</div>
+
+<!-- 權益曲線 -->
+<div class="panel mb-3">
+    <div class="panel-header">
+        <span>權益曲線</span>
+        <span class="text-muted small">藍線：策略淨值 / 灰線：大盤走勢</span>
+    </div>
+    <div class="panel-body p-0">
+        <div id="equityChart" style="width:100%;height:350px;"></div>
+    </div>
+</div>
+
+<!-- 逐筆交易表 -->
+<div class="panel">
+    <div class="panel-header">
+        <span>逐筆交易明細</span>
+        <span class="text-muted small">預留：篩選/排序功能</span>
+    </div>
+    <div class="panel-body">
+        <div class="table-responsive">
+            <table class="table table-dark table-sm table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>日期</th>
+                        <th>股票</th>
+                        <th>方向</th>
+                        <th>價格</th>
+                        <th>張數</th>
+                        <th>理由</th>
+                        <th>持有天數</th>
+                        <th>損益%</th>
+                    </tr>
+                </thead>
+                <tbody id="btTradeTableBody">
+                    <tr><td colspan="8" class="text-center text-muted">尚未執行回測</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- 回測進度 -->
+<div class="position-fixed bottom-0 start-0 end-0 p-3" id="btProgress" style="display:none; z-index:1050;">
+    <div class="card bg-dark border-secondary mx-auto" style="max-width:500px;">
+        <div class="card-body text-center">
+            <div class="spinner-border text-primary mb-2" role="status"></div>
+            <div id="btProgressText">回測執行中... 2024-01-15</div>
+            <div class="progress mt-2" style="height:6px;">
+                <div class="progress-bar" id="btProgressBar" style="width:0%"></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/backtest.js') }}"></script>
+{% endblock %}

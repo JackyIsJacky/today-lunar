@@ -1,0 +1,256 @@
+{% extends "base.html" %}
+{% block title %}策略選股 - 關鍵籌碼追蹤演算法{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2>策略選股</h2>
+    <div class="header-actions">
+        <button class="btn btn-primary btn-sm" id="btnRunAll">
+            <i class="bi bi-play-fill"></i> 執行全部篩選
+        </button>
+        <button class="btn btn-outline-light btn-sm" id="btnRunStep1">僅步驟一</button>
+        <button class="btn btn-outline-light btn-sm" id="btnRunStep2">僅步驟二</button>
+        <button class="btn btn-outline-light btn-sm" id="btnRunStep3">僅步驟三</button>
+        <button class="btn btn-outline-secondary btn-sm" id="btnExport">
+            <i class="bi bi-download"></i> 匯出結果
+        </button>
+    </div>
+</div>
+
+<!-- 步驟一 -->
+<div class="accordion-panel">
+    <div class="accordion-header" data-bs-toggle="collapse" data-bs-target="#step1Panel" aria-expanded="true">
+        <div class="d-flex align-items-center gap-2">
+            <span class="step-number">1</span>
+            <span>步驟一：量縮 + 股本 + 價格過濾</span>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <span class="badge bg-accent-1" id="step1PassCount">0</span>
+            <span class="text-muted small">通過</span>
+            <i class="bi bi-chevron-down accordion-arrow"></i>
+        </div>
+    </div>
+    <div class="collapse show" id="step1Panel">
+        <div class="accordion-body">
+            <div class="row g-3 mb-3">
+                <div class="col-md-4">
+                    <div class="filter-condition">
+                        <div class="filter-label">大盤量縮判斷</div>
+                        <div class="filter-value" id="step1VolumeStatus">--</div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="filter-condition">
+                        <div class="filter-label">股本上限</div>
+                        <div class="filter-value">10 億</div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="filter-condition">
+                        <div class="filter-label">收盤價上限</div>
+                        <div class="filter-value">50 元</div>
+                    </div>
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-dark table-sm table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>股票代碼</th>
+                            <th>股票名稱</th>
+                            <th>收盤價</th>
+                            <th>股本(億)</th>
+                            <th>當日成交量</th>
+                            <th>狀態</th>
+                        </tr>
+                    </thead>
+                    <tbody id="step1TableBody">
+                        <tr><td colspan="6" class="text-center text-muted">尚未執行篩選</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="text-center mt-2">
+                <span class="text-muted small">預留：歷史觸發趨勢圖</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 步驟二 -->
+<div class="accordion-panel">
+    <div class="accordion-header collapsed" data-bs-toggle="collapse" data-bs-target="#step2Panel">
+        <div class="d-flex align-items-center gap-2">
+            <span class="step-number">2</span>
+            <span>步驟二：關鍵紅K + 支撐防守線 + 型態排除</span>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <span class="badge bg-accent-2" id="step2PassCount">0</span>
+            <span class="text-muted small">通過</span>
+            <i class="bi bi-chevron-down accordion-arrow"></i>
+        </div>
+    </div>
+    <div class="collapse" id="step2Panel">
+        <div class="accordion-body">
+            <div class="row g-3 mb-3">
+                <div class="col-md-4">
+                    <div class="filter-condition">
+                        <div class="filter-label">關鍵紅K回溯天數</div>
+                        <div class="filter-value" id="step2Lookback">20 日</div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="filter-condition">
+                        <div class="filter-label">支撐防守條件</div>
+                        <div class="filter-value">收盤價 >= 關鍵紅K最低價</div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="filter-condition">
+                        <div class="filter-label">排除型態</div>
+                        <div class="filter-value">出量黑K / 長上影線</div>
+                    </div>
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-dark table-sm table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>股票代碼</th>
+                            <th>股票名稱</th>
+                            <th>關鍵紅K日期</th>
+                            <th>當日成交量</th>
+                            <th>支撐價</th>
+                            <th>現價</th>
+                            <th>狀態</th>
+                        </tr>
+                    </thead>
+                    <tbody id="step2TableBody">
+                        <tr><td colspan="7" class="text-center text-muted">尚未執行篩選</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="mt-2">
+                <div class="section-title small">排除名單（含排除原因）</div>
+                <div class="table-responsive">
+                    <table class="table table-dark table-sm mb-0">
+                        <thead>
+                            <tr><th>股票代碼</th><th>股票名稱</th><th>排除原因</th></tr></thead>
+                        <tbody id="step2ExcludedBody">
+                            <tr><td colspan="3" class="text-center text-muted">尚無排除名單</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 步驟三 -->
+<div class="accordion-panel">
+    <div class="accordion-header collapsed" data-bs-toggle="collapse" data-bs-target="#step3Panel">
+        <div class="d-flex align-items-center gap-2">
+            <span class="step-number">3</span>
+            <span>步驟三：連續買盤 + 隔日沖排除 + 攤平主力辨識</span>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <span class="badge bg-accent-3" id="step3PassCount">0</span>
+            <span class="text-muted small">通過</span>
+            <i class="bi bi-chevron-down accordion-arrow"></i>
+        </div>
+    </div>
+    <div class="collapse" id="step3Panel">
+        <div class="accordion-body">
+            <div class="row g-3 mb-3">
+                <div class="col-md-4">
+                    <div class="filter-condition">
+                        <div class="filter-label">連續買盤追蹤天數</div>
+                        <div class="filter-value">近 5 日</div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="filter-condition">
+                        <div class="filter-label">隔日沖黑名單</div>
+                        <div class="filter-value">凱基台北等 (可自訂)</div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="filter-condition">
+                        <div class="filter-label">攤平主力判斷</div>
+                        <div class="filter-value">大跌期間買超 > 賣超</div>
+                    </div>
+                </div>
+            </div>
+            <div class="section-title small">主力連續買盤確認</div>
+            <div class="table-responsive mb-3">
+                <table class="table table-dark table-sm table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>股票代碼</th>
+                            <th>股票名稱</th>
+                            <th>主力分點</th>
+                            <th>連續買超天數</th>
+                            <th>累積買超張數</th>
+                            <th>隔日沖警示</th>
+                            <th>攤平訊號</th>
+                        </tr>
+                    </thead>
+                    <tbody id="step3TableBody">
+                        <tr><td colspan="7" class="text-center text-muted">尚未執行篩選</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="section-title small">隔日沖排除名單</div>
+            <div class="table-responsive">
+                <table class="table table-dark table-sm mb-0">
+                    <thead>
+                        <tr><th>股票代碼</th><th>股票名稱</th><th>排除分點</th><th>排除原因</th></tr></thead>
+                    <tbody id="step3ExcludedBody">
+                        <tr><td colspan="4" class="text-center text-muted">尚無排除名單</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 步驟四：庫存出場監控（僅有持倉時顯示） -->
+<div class="accordion-panel" id="step4Section" style="display:none;">
+    <div class="accordion-header collapsed" data-bs-toggle="collapse" data-bs-target="#step4Panel">
+        <div class="d-flex align-items-center gap-2">
+            <span class="step-number step-number-danger">4</span>
+            <span>步驟四：庫存出場監控（破線 / 型態 / 籌碼）</span>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <span class="badge bg-danger" id="step4AlertCount">0</span>
+            <span class="text-muted small">警示</span>
+            <i class="bi bi-chevron-down accordion-arrow"></i>
+        </div>
+    </div>
+    <div class="collapse" id="step4Panel">
+        <div class="accordion-body">
+            <div class="table-responsive">
+                <table class="table table-dark table-sm table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>股票代碼</th>
+                            <th>股票名稱</th>
+                            <th>成本價</th>
+                            <th>支撐價</th>
+                            <th>現價</th>
+                            <th>警示類型</th>
+                            <th>警示說明</th>
+                        </tr>
+                    </thead>
+                    <tbody id="step4TableBody">
+                        <tr><td colspan="7" class="text-center text-muted">無出場警示</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/screening.js') }}"></script>
+{% endblock %}
